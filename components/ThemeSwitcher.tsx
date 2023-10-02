@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { BsSun, BsMoon } from "react-icons/bs";
-import { cn } from "@/lib/utils";
 
 interface ThemeSwitcherProps {
   className?: string;
