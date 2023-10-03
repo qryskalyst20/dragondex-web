@@ -25,7 +25,11 @@ export async function SetDragons() {
   for (const data of structuredData) {
     const { error } = await supabase
       .from("dragons")
-      .insert({ dragon_name: data.dragonName, dragon_image: data.imageUrl });
+      .upsert(
+        { dragon_name: data.dragonName, dragon_image: data.imageUrl },
+        { onConflict: "dragon_name" }
+      )
+      .eq("dragon_name", data.dragonName);
     if (error) {
       console.error(error);
     }
