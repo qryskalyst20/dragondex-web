@@ -1,16 +1,19 @@
 "use client";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition } from "react";
 import { SetDragons } from "@/backend/SetDragons";
 import { GetDragons } from "@/backend/GetDragons";
 import Image from "next/image";
 import useNextBlurhash from "use-next-blurhash";
 import SearchBar from "@/components/SearchBar";
+import lodash from "lodash";
+import Skeleton from "react-loading-skeleton";
 
 export default function Home() {
   const [dragonData, setDragonData] = useState([
     { dragon_name: "", dragon_image: "" },
   ]);
+  const [isPending, startTransition] = useTransition();
 
   const [blurDataUrl] = useNextBlurhash("LEHV6nWB2yk8pyo0adR*.7kCMdnj");
 
@@ -31,22 +34,25 @@ export default function Home() {
     ) {
       (async function () {
         const res = await SetDragons();
+        console.log("running setDragon");
         localStorage.setItem(
           "lastExecutionTimestamp",
           currentTimestamp.toString()
         );
       })();
     }
-
-    (async function () {
-      const res = await GetDragons();
-      if (res != null) {
-        const formattedData = res.map((item) => ({
-          dragon_name: item.dragon_name,
-          dragon_image: item.dragon_image || "",
-        }));
-        setDragonData(formattedData);
-      }
+    (() => {
+      startTransition(async () => {
+        const res = await GetDragons();
+        console.log("running getDragon");
+        if (res != null) {
+          const formattedData = res.map((item) => ({
+            dragon_name: item.dragon_name,
+            dragon_image: item.dragon_image || "",
+          }));
+          setDragonData(formattedData);
+        }
+      });
     })();
   }, []);
 
@@ -54,7 +60,7 @@ export default function Home() {
     return dragonData.map((item, index) => (
       <div
         key={index}
-        className="h-fit w-fit p-5 rounded-2xl bg-slate-300 dark:bg-zinc-950"
+        className="h-36 w-fit p-5 rounded-2xl bg-slate-100 hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 drop-shadow-lg cursor-pointer"
       >
         <h1 className="text-zinc-800 dark:text-slate-100">
           {item.dragon_name}
@@ -84,7 +90,16 @@ export default function Home() {
       <ThemeSwitcher className="absolute top-10 left-10" />
       <SearchBar onChange={(e) => handleFilter(e.target.value as string)} />
       <div className="w-full gap-2 flex flex-row flex-wrap">
-        {memoizedDragonData}
+        {isPending
+          ? lodash
+              .range(0, 2)
+              .map((item: number) => (
+                <div
+                  key={item}
+                  className="h-36 w-36 p-5 rounded-2xl bg-slate-300 dark:bg-zinc-800 drop-shadow-lg animate-pulse"
+                ></div>
+              ))
+          : memoizedDragonData}
       </div>
     </main>
   );
