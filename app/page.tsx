@@ -4,17 +4,15 @@ import { useEffect, useState, useMemo, useTransition } from "react";
 import { SetDragons } from "@/backend/SetDragons";
 import { GetDragons } from "@/backend/GetDragons";
 import Image from "next/image";
-import useNextBlurhash from "use-next-blurhash";
 import SearchBar from "@/components/SearchBar";
-import lodash from "lodash";
+import lodash, { debounce } from "lodash";
 
 export default function Home() {
   const [dragonData, setDragonData] = useState([
     { dragon_name: "", dragon_image: "" },
   ]);
+  const [filteredData, setFilteredData] = useState(dragonData);
   const [isPending, startTransition] = useTransition();
-
-  const [blurDataUrl] = useNextBlurhash("LEHV6nWB2yk8pyo0adR*.7kCMdnj");
 
   useEffect(() => {
     // Get the last execution timestamp from local storage
@@ -50,15 +48,17 @@ export default function Home() {
             dragon_image: item.dragon_image || "",
           }));
           setDragonData(formattedData);
+          setFilteredData(formattedData);
         }
       });
     })();
   }, []);
 
   const memoizedDragonData = useMemo(() => {
-    return dragonData.map((item, index) => (
+    return filteredData.map((item, index) => (
       <div
         key={index}
+        id={item.dragon_name}
         className="h-36 w-fit p-5 rounded-2xl bg-slate-100 hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 drop-shadow-lg cursor-pointer"
       >
         <h1 className="text-zinc-800 dark:text-slate-100">
@@ -70,19 +70,17 @@ export default function Home() {
           height={70}
           alt={item.dragon_name}
           className="object-contain"
-          placeholder="blur"
-          blurDataURL={blurDataUrl} // use the base64 image as a placeholder
         />
       </div>
     ));
-  }, [dragonData, blurDataUrl]);
+  }, [filteredData]);
 
-  function handleFilter(searchTerm: string) {
+  const handleFilter = debounce((searchTerm: string) => {
     const filteredDragons = dragonData.filter((dragon) =>
       dragon.dragon_name.toUpperCase().includes(searchTerm.toUpperCase())
     );
-    setDragonData(filteredDragons);
-  }
+    setFilteredData(filteredDragons); // Update the filtered data state
+  }, 500);
 
   return (
     <main className="flex min-h-screen max-w-screen flex-col bg-slate-100 dark:bg-zinc-900 items-center justify-between gap-5 p-24">
