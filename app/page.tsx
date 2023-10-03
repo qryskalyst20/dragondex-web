@@ -91,7 +91,7 @@ export default function Home() {
       <div className="w-full gap-2 flex flex-row flex-wrap">
         {isPending
           ? lodash
-              .range(0, 2)
+              .range(0, 100)
               .map((item: number) => (
                 <div
                   key={item}
