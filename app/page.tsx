@@ -1,8 +1,9 @@
 "use client";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
-import { useEffect, useState, useMemo, useTransition } from "react";
+import { useEffect, useState, useMemo, useTransition, useRef } from "react";
 import { SetDragons } from "@/backend/SetDragons";
 import { GetDragons } from "@/backend/GetDragons";
+import { SearchDragons } from "@/backend/SearchDragons";
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import lodash, { debounce } from "lodash";
@@ -12,7 +13,9 @@ export default function Home() {
     { dragon_name: "", dragon_image: "" },
   ]);
   const [filteredData, setFilteredData] = useState(dragonData);
+  const [page, setPage] = useState(49); // Page number for pagination
   const [isPending, startTransition] = useTransition();
+  const loadMoreButtonRef = useRef(null); // Create a ref for the button
 
   useEffect(() => {
     // Get the last execution timestamp from local storage
@@ -40,7 +43,7 @@ export default function Home() {
     }
     (() => {
       startTransition(async () => {
-        const res = await GetDragons();
+        const res = await GetDragons(0, page);
         console.log("running getDragon");
         if (res != null) {
           const formattedData = res.map((item) => ({
@@ -52,7 +55,39 @@ export default function Home() {
         }
       });
     })();
-  }, []);
+  }, [page]);
+
+  const setPageDebounced = debounce((newPage: number) => {
+    setPage(newPage);
+  }, 500);
+
+  // Use the Intersection Observer API to detect when the button is in view
+  useEffect(() => {
+    const options = {
+      root: null, // Use the viewport as the root
+      rootMargin: "0px", // No margin
+      threshold: 0.5, // Trigger when at least 50% of the button is in view
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        // Load more data when the button is in view
+        setPageDebounced((prevPage: number) => prevPage + 50);
+      }
+    }, options);
+
+    // Observe the load more button
+    if (loadMoreButtonRef.current) {
+      observer.observe(loadMoreButtonRef.current);
+    }
+
+    // Cleanup the observer when the component unmounts
+    return () => {
+      if (loadMoreButtonRef.current) {
+        observer.unobserve(loadMoreButtonRef.current);
+      }
+    };
+  }, [setPageDebounced]);
 
   const memoizedDragonData = useMemo(() => {
     return filteredData.map((item, index) => (
@@ -98,6 +133,7 @@ export default function Home() {
               ))
           : memoizedDragonData}
       </div>
+      <button ref={loadMoreButtonRef}>Load More</button>
     </main>
   );
 }
