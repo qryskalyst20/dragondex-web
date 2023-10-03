@@ -7,7 +7,6 @@ import Image from "next/image";
 import useNextBlurhash from "use-next-blurhash";
 import SearchBar from "@/components/SearchBar";
 import lodash from "lodash";
-import Skeleton from "react-loading-skeleton";
 
 export default function Home() {
   const [dragonData, setDragonData] = useState([
