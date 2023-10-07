@@ -1,7 +1,6 @@
 "use client";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { useEffect, useState, useMemo, useTransition, useRef } from "react";
-import { SetDragons } from "@/backend/SetDragons";
 import { GetDragons } from "@/backend/GetDragons";
 import { SearchDragons } from "@/backend/SearchDragons";
 import Image from "next/image";
@@ -18,29 +17,6 @@ export default function Home() {
   const loadMoreButtonRef = useRef(null); // Create a ref for the button
 
   useEffect(() => {
-    // Get the last execution timestamp from local storage
-    const lastExecutionTimestamp = localStorage.getItem(
-      "lastExecutionTimestamp"
-    );
-
-    // Calculate the current timestamp
-    const currentTimestamp: number = new Date().getTime();
-
-    // If lastExecutionTimestamp is not set or a week has passed, run the effect
-    if (
-      !lastExecutionTimestamp ||
-      currentTimestamp - Number(lastExecutionTimestamp) >=
-        7 * 24 * 60 * 60 * 1000
-    ) {
-      (async function () {
-        const res = await SetDragons();
-        console.log("running setDragon");
-        localStorage.setItem(
-          "lastExecutionTimestamp",
-          currentTimestamp.toString()
-        );
-      })();
-    }
     (() => {
       startTransition(async () => {
         const res = await GetDragons(0, page);
@@ -57,22 +33,18 @@ export default function Home() {
     })();
   }, [page]);
 
-  const setPageDebounced = debounce((newPage: number) => {
-    setPage(newPage);
-  }, 500);
-
   // Use the Intersection Observer API to detect when the button is in view
   useEffect(() => {
     const options = {
       root: null, // Use the viewport as the root
       rootMargin: "0px", // No margin
-      threshold: 0.5, // Trigger when at least 50% of the button is in view
+      threshold: 0.1, // Trigger when at least 50% of the button is in view
     };
 
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
         // Load more data when the button is in view
-        setPageDebounced((prevPage: number) => prevPage + 50);
+        setPage((prevPage: number) => prevPage + 50);
       }
     }, options);
 
@@ -87,7 +59,7 @@ export default function Home() {
         observer.unobserve(loadMoreButtonRef.current);
       }
     };
-  }, [setPageDebounced]);
+  }, []);
 
   const memoizedDragonData = useMemo(() => {
     return filteredData.map((item, index) => (
