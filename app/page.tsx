@@ -1,8 +1,6 @@
 "use client";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { useEffect, useState, useMemo, useTransition, useRef } from "react";
-import { GetDragons } from "@/backend/GetDragons";
-import { SearchDragons } from "@/backend/SearchDragons";
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import lodash, { debounce } from "lodash";
@@ -19,13 +17,16 @@ export default function Home() {
   useEffect(() => {
     (() => {
       startTransition(async () => {
-        const res = await GetDragons(0, page);
-        console.log("running getDragon");
+        const res = await fetch("api/dragons");
         if (res != null) {
-          const formattedData = res.map((item) => ({
-            dragon_name: item.dragon_name,
-            dragon_image: item.dragon_image || "",
-          }));
+          const data = await res.json(); // Convert response to JSON
+          console.log(data);
+          const formattedData = data.map(
+            (item: { dragonName: string; imageUrl: string }) => ({
+              dragon_name: item.dragonName,
+              dragon_image: item.imageUrl || "",
+            })
+          );
           setDragonData(formattedData);
           setFilteredData(formattedData);
         }
